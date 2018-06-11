@@ -6,15 +6,82 @@ $( document ).ready(function() {
 	// This comes from new-file-link-single
 	if (typeof window.openMediaWindowSingle === 'undefined') {
 		window.mediaZone = '';
-		window.openMediaWindowSingle = function (event, zone,url) {
+		window.openMediaWindowSingle = function (event, zone) {
 			window.single = true;
 			window.old = false;
 			window.mediaZone = zone;
-			console.log('Zone: ' + zone);
 			window.zoneWrapper = $(event.currentTarget).siblings('.jsThumbnailImageWrapper');
 			window.open(Asgard.mediaGridSelectUrl, '_blank', 'menubar=no,status=no,toolbar=no,scrollbars=yes,height=500,width=1000');
 		};
 	}
+
+	// This comes from new-document-link-single
+	if (typeof window.openDocumentWindowSingle === 'undefined') {
+		window.mediaZone = '';
+		window.openDocumentWindowSingle = function (event, zone, url) {
+			window.single = true;
+			window.old = false;
+			window.mediaZone = zone;
+			window.zoneWrapper = $(event.currentTarget).siblings('.jsThumbnailImageWrapper');
+			window.open(url, '_blank', 'menubar=no,status=no,toolbar=no,scrollbars=yes,height=500,width=1000');
+		};
+	}
+
+	if (typeof window.includeDocumentSingle === 'undefined') {
+		window.includeDocumentSingle = function (mediaId, filePath, mediaType, mimetype, filename) {
+			var mediaPlaceholder;
+
+			mediaPlaceholder = '<i class="fa fa-file" style="font-size: 20px;"></i>'+'<span style="padding-left: 5px; margin-right: 15px;">'+filename+'</span>';
+			
+			var html = '<figure data-id="'+ mediaId +'">' + mediaPlaceholder +
+				'<a class="jsRemoveSimpleLink" href="#" data-id="' + mediaId + '">' +
+				'<i class="fa fa-times-circle removeIcon"></i></a>' +
+				'</figure>';
+			window.zoneWrapper.append(html).fadeIn('slow', function() {
+				toggleButton($(this));
+			});
+            
+            window.zoneWrapper.children('input').val(mediaId);
+		};
+	}
+
+/// MULTIPLE DOCUMENT
+
+	// This comes from new-file-link-multiple
+	if (typeof window.openMediaWindowMultiple === 'undefined') {
+		window.mediaZone = '';
+		window.openDocumentWindowMultiple = function (event, zone, url) {
+			window.single = false;
+			window.old = false;
+			window.mediaZone = zone;
+			window.zoneWrapper = $(event.currentTarget).siblings('.jsThumbnailImageWrapper');
+			window.open(url, '_blank', 'menubar=no,status=no,toolbar=no,scrollbars=yes,height=500,width=1000');
+		};
+	}
+	if (typeof window.includeDocumentMultiple === 'undefined') {
+		window.includeDocumentMultiple = function (mediaId, filePath, mediaType, mimetype, filename) {
+			var mediaPlaceholder;
+
+			mediaPlaceholder = '<i class="fa fa-file" style="font-size: 20px;"></i>'+'<span style="padding-left: 5px; margin-right: 15px;">'+filename+'</span>';;
+
+			var html = '<figure data-id="' + mediaId + '">' + mediaPlaceholder +
+				'<a class="jsRemoveLink" href="#" data-id="' + mediaId + '">' +
+				'<i class="fa fa-times-circle removeIcon"></i>' +
+				'</a>' +
+				'<input type="hidden" name="medias_multi[' + window.mediaZone + '][files][]" value="' + mediaId + '">' +
+				'</figure>';
+			window.zoneWrapper.append(html).fadeIn();
+			window.zoneWrapper.trigger('sortupdate');
+			if ($fileCount.length > 0) {
+				var count = parseInt($fileCount.text());
+				$fileCount.text(count + 1);
+			}
+		};
+	}
+
+
+/// END MULTIPLE DOCUMENT
+
 	if (typeof window.includeMediaSingle === 'undefined') {
 		window.includeMediaSingle = function (mediaId, filePath, mediaType, mimetype) {
 			var mediaPlaceholder;
