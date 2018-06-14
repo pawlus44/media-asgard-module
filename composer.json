@@ -56,7 +56,7 @@
   "prefer-stable": true,
   "package": {
       "name": "pawlus44/media-module",
-      "version": "3.0.1",
+      "version": "3.0.2",
       "source": {
           "url": "git://github.com/pawlus44/media-asgard-module.git",
           "type": "git",

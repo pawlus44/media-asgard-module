@@ -66,4 +66,13 @@ return [
         // Read module views from /resources/views/asgard/<module-name>
         'resources' => false,
     ],
+
+    'type' => [
+        'text_documents' => [
+            'doc',
+            'docx',
+            'odt',
+            'pdf'
+        ]
+    ]
 ];
