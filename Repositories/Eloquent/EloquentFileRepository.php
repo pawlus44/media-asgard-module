@@ -199,7 +199,7 @@ class EloquentFileRepository extends EloquentBaseRepository implements FileRepos
 
     public function allByType($type): Collection
     {
-        $extension =  config('asgard.media.document-type.type.'.$type);
+        $extension =  config('asgard.media.config.type.'.$type);
         return $this->model->where('is_folder', 0)->whereIn('extension', $extension)->get();
     }
 
