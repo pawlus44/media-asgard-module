@@ -17,13 +17,6 @@
             {!! Form::select('status', $galleryStatus, $gallery->status, ['class' => 'form-control']) !!}
             {!! $errors->first("{$lang}.status", '<span class="help-block">:message</span>') !!}
         </div>
-
-        <div class='form-group {{ $errors->has("{$lang}.type") ? ' has-error' : '' }}'>
-            {!! Form::label("{$lang}[body]", trans('media::galleries.form.type')) !!}
-            {!! Form::select('type', $typeOfGallery, $gallery->type, ['class' => 'form-control']) !!}
-            {!! $errors->first("{$lang}.status", '<span class="help-block">:message</span>') !!}
-        </div>
-
     </div>
 
 </div>
