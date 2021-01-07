@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\Request;
 use Modules\Core\Repositories\Eloquent\EloquentBaseRepository;
 use Modules\Media\Entities\File;
+use Modules\Media\Entities\Gallery;
 use Modules\Media\Events\FileIsCreating;
 use Modules\Media\Events\FileIsUpdating;
 use Modules\Media\Events\FileStartedMoving;
@@ -14,6 +15,7 @@ use Modules\Media\Events\FileWasUpdated;
 use Modules\Media\Helpers\FileHelper;
 use Modules\Media\Repositories\FileRepository;
 use Modules\Media\Repositories\FolderRepository;
+use Modules\Media\ValueObjects\MediaPath;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 
 class EloquentFileRepository extends EloquentBaseRepository implements FileRepository
@@ -69,6 +71,44 @@ class EloquentFileRepository extends EloquentBaseRepository implements FileRepos
         event(new FileWasCreated($file));
 
         return $file;
+    }
+
+    /**
+     * Create a file row from the given file
+     * @param UploadedFile $file
+     * @param Gallery $gallery
+     * @return mixed
+     */
+    public function createFromFileAndGallery(UploadedFile $file, Gallery $gallery)
+    {
+        $fileName = FileHelper::slug($file->getClientOriginalName());
+        $exists = $this->model->where('filename', $fileName)->first();
+
+        if ($exists) {
+            $fileName = $this->getNewUniqueFilename($fileName);
+        }
+
+        $data = [
+            'filename' => $fileName,
+            'path' => $this->getPathForFileFromGallery($fileName, $gallery->folder->path),
+            'extension' => substr(strrchr($fileName, '.'), 1),
+            'mimetype' => $file->getClientMimeType(),
+            'filesize' => $file->getFileInfo()->getSize(),
+            'folder_id' => $gallery->folder->id,
+            'is_folder' => 0,
+        ];
+
+        event($event = new FileIsCreating($data));
+
+        $file = $this->model->create($event->getAttributes());
+        event(new FileWasCreated($file));
+
+        return $file;
+    }
+
+    private function getPathForFileFromGallery(string $filename, MediaPath $folderGalleryPath)
+    {
+        return $folderGalleryPath->getRelativeUrl().'/'.$filename;
     }
 
     private function getPathFor(string $filename, int $folderId)
@@ -218,5 +258,10 @@ class EloquentFileRepository extends EloquentBaseRepository implements FileRepos
         event(new FileStartedMoving($file, $previousData));
 
         return $file;
+    }
+
+    public function getFolderByName(string $name)
+    {
+        return $this->model->where('filename', $name)->where('is_folder',1)->first();
     }
 }

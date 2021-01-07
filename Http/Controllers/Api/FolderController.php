@@ -6,6 +6,7 @@ use Illuminate\Routing\Controller;
 use Modules\Media\Entities\File;
 use Modules\Media\Http\Requests\CreateFolderRequest;
 use Modules\Media\Repositories\FolderRepository;
+use Modules\Media\Validators\FolderIsAssignedWithGallery;
 
 class FolderController extends Controller
 {
@@ -14,9 +15,15 @@ class FolderController extends Controller
      */
     private $folder;
 
-    public function __construct(FolderRepository $folder)
+    /**
+     * @var FolderIsAssignedWithGallery $folderIsAssignedWithGallery
+     */
+    private $folderIsAssignedWithGallery;
+
+    public function __construct(FolderRepository $folder, FolderIsAssignedWithGallery $folderIsAssignedWithGallery)
     {
         $this->folder = $folder;
+        $this->folderIsAssignedWithGallery = $folderIsAssignedWithGallery;
     }
 
     public function store(CreateFolderRequest $request)
@@ -43,6 +50,13 @@ class FolderController extends Controller
 
     public function destroy(File $folder)
     {
+        if( !$this->folderIsAssignedWithGallery->check($folder) ) {
+            return response()->json([
+                'error' => true,
+                'message' => trans('media::messages.folder contain item joined with gallery')
+            ], 422);
+        }
+
         $this->folder->destroy($folder);
 
         return response()->json([

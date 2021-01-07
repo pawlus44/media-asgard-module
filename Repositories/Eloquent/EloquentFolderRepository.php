@@ -5,6 +5,7 @@ namespace Modules\Media\Repositories\Eloquent;
 use Illuminate\Database\Eloquent\Collection;
 use Modules\Core\Repositories\Eloquent\EloquentBaseRepository;
 use Modules\Media\Entities\File;
+use Modules\Media\Entities\Gallery;
 use Modules\Media\Events\FolderIsCreating;
 use Modules\Media\Events\FolderIsDeleting;
 use Modules\Media\Events\FolderIsUpdating;
@@ -46,6 +47,25 @@ class EloquentFolderRepository extends EloquentBaseRepository implements FolderR
 
         return $folder;
     }
+
+    public function createGalleryFolder(Gallery $gallery, File $parentFolderGallery)
+    {
+        $galleryFolderName = $gallery->title . '(ID: ' . $gallery->id . ')';
+
+        $data = [
+            'filename' => $galleryFolderName,
+            'path' => $this->getFolderPath($parentFolderGallery->id, $gallery->slug),
+            'is_folder' => true,
+            'folder_id' => $parentFolderGallery->id
+        ];
+        event($event = new FolderIsCreating($data));
+        $folder = $this->model->create($event->getAttributes());
+
+        event(new FolderWasCreated($folder, $data));
+
+        return $folder;
+    }
+
 
     public function update($model, $data)
     {
@@ -151,6 +171,18 @@ class EloquentFolderRepository extends EloquentBaseRepository implements FolderR
     }
 
     /**
+     * @param int $mainGalleryFolderId
+     * @param string $galleryFolderName
+     * @return string
+     */
+    private function getFolderPath(int $mainGalleryFolderId, string $galleryFolderName ): string
+    {
+        $parent = $this->findFolder($mainGalleryFolderId);
+
+        return $parent->path->getRelativeUrl() . '/' . $galleryFolderName;
+    }
+
+    /**
      * Create an instantiated File entity, appointed as root
      * @return File
      */
@@ -161,5 +193,10 @@ class EloquentFolderRepository extends EloquentBaseRepository implements FolderR
             'folder_id' => 0,
             'path' => config('asgard.media.config.files-path'),
         ]);
+    }
+
+    public function getListOfContentFolder(File $folder)
+    {
+        return $this->getByAttributes(['folder_id' => $folder->id]);
     }
 }

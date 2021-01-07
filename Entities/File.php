@@ -101,4 +101,19 @@ class File extends Model implements TaggableInterface, Responsable
                 'Content-Type' => $this->mimetype,
             ]);
     }
+
+    public function galleries()
+    {
+        return $this->belongsToMany(
+            'Modules\Media\Entities\Gallery',
+            'gallery__media_files',
+            'file_id',
+            'gallery_id'
+        );
+    }
+
+    public function galleryFolder()
+    {
+        return $this->belongsTo('Modules\Media\Entities\Gallery', 'id', 'folder_id');
+    }
 }

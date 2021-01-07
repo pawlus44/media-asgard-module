@@ -8,6 +8,7 @@ use Modules\Core\Events\BuildingSidebar;
 use Modules\Core\Events\LoadingBackendTranslations;
 use Modules\Core\Traits\CanGetSidebarClassForModule;
 use Modules\Core\Traits\CanPublishConfiguration;
+use Modules\Media\Blade\GalleryMediaMultipleDirective;
 use Modules\Media\Blade\MediaMultipleDirective;
 use Modules\Media\Blade\MediaSingleDirective;
 use Modules\Media\Blade\DocumentSingleDirective;
@@ -33,6 +34,7 @@ use Modules\Media\Repositories\Eloquent\EloquentFolderRepository;
 use Modules\Media\Repositories\FileRepository;
 use Modules\Media\Repositories\FolderRepository;
 use Modules\Tag\Repositories\TagManager;
+use Modules\Media\Repositories\GalleryRepository;
 
 class MediaServiceProvider extends ServiceProvider
 {
@@ -60,6 +62,9 @@ class MediaServiceProvider extends ServiceProvider
         });
         $this->app->bind('media.multiple.directive', function () {
             return new MediaMultipleDirective();
+        });
+        $this->app->bind('gallery.media.multiple.directive', function () {
+            return new GalleryMediaMultipleDirective();
         });
         $this->app->bind('media.thumbnail.directive', function () {
             return new MediaThumbnailDirective();
@@ -120,6 +125,24 @@ class MediaServiceProvider extends ServiceProvider
         $this->app->bind(FolderRepository::class, function () {
             return new EloquentFolderRepository(new File());
         });
+        $this->app->bind(
+            'Modules\Media\Repositories\GalleryRepository',
+            function () {
+                $repository = new \Modules\Media\Repositories\Eloquent\EloquentGalleryRepository(new \Modules\Media\Entities\Gallery());
+
+                if (! config('app.cache')) {
+                    return $repository;
+                }
+            }
+        );
+        $this->app->bind(
+            'Modules\Media\Repositories\GalleryMediaFilesRepository',
+            function () {
+                return new \Modules\Media\Repositories\Eloquent\EloquentGalleryMediaFilesRepository(
+                    new \Modules\Media\Entities\MediaFiles()
+                );
+            }
+        );
     }
 
     /**
@@ -176,6 +199,9 @@ class MediaServiceProvider extends ServiceProvider
         });
         $this->app['blade.compiler']->directive('mediaMultiple', function ($value) {
             return "<?php echo MediaMultipleDirective::show([$value]); ?>";
+        });
+        $this->app['blade.compiler']->directive('galleryMediaMultiple', function ($value) {
+            return "<?php echo GalleryMediaMultipleDirective::show([$value]); ?>";
         });
         $this->app['blade.compiler']->directive('thumbnail', function ($value) {
             return "<?php echo MediaThumbnailDirective::show([$value]); ?>";

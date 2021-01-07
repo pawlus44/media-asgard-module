@@ -40,6 +40,7 @@ class DocumentSingleDirective
 
         $url = $this->url;
 
+        $media = null;
         if ($this->entity !== null) {
             $media = $this->entity->filesByZone($this->zone)->first();
         }

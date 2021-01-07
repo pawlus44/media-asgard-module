@@ -279,19 +279,44 @@
                             files: this.selectedMedia,
                         })
                             .then((response) => {
-                                this.$message({
+                                if (response.data.status === 'something is not ok') {
+                                  this.$message({
+                                    type: 'warning',
+                                    message: response.data.message,
+                                  });
+                                } else {
+                                  this.$message({
                                     type: 'success',
                                     message: response.data.message,
-                                });
-                                this.filesAreDeleting = false;
-                                this.$refs.mediaTable.clearSelection();
-                                this.queryServer();
+                                  });
+                                }
+                              this.filesAreDeleting = false;
+                              this.$refs.mediaTable.clearSelection();
+                              this.queryServer();
+                            })
+                            .catch((error) => {
+                                if (error.response.status === 'undefined') {
+                                  vm.$message({
+                                    type: 'error',
+                                    message: error.data.message,
+                                  });
+                                } else if (error.response.status === 422) {
+                                  vm.$message({
+                                    type: 'error',
+                                    message: error.response.data.message,
+                                  });
+                                } else {
+                                  vm.$message({
+                                    type: 'error',
+                                    message: error.data.message,
+                                  });
+                                }
                             });
                     })
                     .catch(() => {
                         this.$message({
-                            type: 'info',
-                            message: this.trans('core.delete cancelled'),
+                          type: 'info',
+                          message: this.trans('core.delete cancelled')
                         });
                     });
             },

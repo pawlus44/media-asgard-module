@@ -84,10 +84,19 @@ $router->group(['middleware' => 'api.token'], function (Router $router) {
         'as' => 'api.media.media.destroy',
         'middleware' => 'token-can:media.medias.destroy',
     ]);
-
     $router->post('batch-destroy', [
         'uses' => 'BatchDestroyController',
         'as' => 'api.media.media.batch-destroy',
         'middleware' => 'token-can:media.medias.destroy',
+    ]);
+    $router->post('file-dropzone/gallery', [
+        'uses' => 'MediaController@storeGalleryFileDropzone',
+        'as' => 'api.media.store-dropzone.gallery',
+        'middleware' => 'token-can:media.medias.create',
+    ]);
+    $router->put('gallery/file/order', [
+        'uses' => 'MediaController@updateOrderFileIntoGallery',
+        'as' => 'api.media.gallery.update.order',
+        'middleware' => 'token-can:media.medias.edit',
     ]);
 });

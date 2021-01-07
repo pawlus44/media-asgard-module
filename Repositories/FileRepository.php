@@ -53,4 +53,12 @@ interface FileRepository extends BaseRepository
     public function allByType($type) : Collection;
 
     public function move(File $file, File $destination) : File;
+
+    /**
+     * Method to get file by name
+     *
+     * @param string $name
+     * @return File|null
+     */
+    public function getFolderByName(string $name);
 }

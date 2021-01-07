@@ -49,9 +49,23 @@ class MediaGridController extends AdminBaseController
         return view('media::admin.grid.ckeditor', compact('files', 'thumbnails'));
     }
 
-    public function type($type){
+    public function type($type)
+    {
         $files = $this->file->allByType($type);
+        $thumbnails = $this->thumbnailsManager->all();
 
         return view('media::admin.grid.document', compact('files', 'thumbnails'));
+    }
+
+    /**
+     * A grid view for the upload button without upload lirn
+     * @return \Illuminate\View\View
+     */
+    public function withoutUpload()
+    {
+        $files = $this->file->allForGrid();
+        $thumbnails = $this->thumbnailsManager->all();
+
+        return view('media::admin.grid.general-without-upload', compact('files', 'thumbnails'));
     }
 }

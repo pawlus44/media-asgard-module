@@ -26,7 +26,7 @@ class AddPublishedAtToFile extends Migration
     public function down()
     {
         Schema::table('media__files', function (Blueprint $table) {
-            $table->drop('published_at');
+            $table->dropColumn('published_at');
         });
     }
 }

@@ -5,6 +5,7 @@ namespace Modules\Media\Services;
 use Illuminate\Contracts\Filesystem\Factory;
 use Illuminate\Foundation\Bus\DispatchesJobs;
 use Modules\Media\Entities\File;
+use Modules\Media\Entities\Gallery;
 use Modules\Media\Jobs\CreateThumbnails;
 use Modules\Media\Repositories\FileRepository;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
@@ -48,6 +49,28 @@ class FileService
 
         return $savedFile;
     }
+
+    /**
+     * @param  UploadedFile $file
+     * @return mixed
+     */
+    public function storeGalleryFile(UploadedFile $file, Gallery $gallery)
+    {
+        $savedFile = $this->file->createFromFileAndGallery($file, $gallery);
+
+        $path = $this->getDestinationPath($savedFile->getOriginal('path'));
+        $stream = fopen($file->getRealPath(), 'r+');
+        $this->filesystem->disk($this->getConfiguredFilesystem())->writeStream($path, $stream, [
+            'visibility' => 'public',
+            'mimetype' => $savedFile->mimetype,
+        ]);
+
+        $this->createThumbnails($savedFile);
+
+        return $savedFile;
+    }
+
+
 
     /**
      * Create the necessary thumbnails for the given file

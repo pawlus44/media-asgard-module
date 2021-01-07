@@ -4,20 +4,27 @@ namespace Modules\Media\Http\Controllers\Api;
 
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Modules\Media\Image\Imagy;
+use Modules\Media\Entities\File;
 use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\DB;
-use Modules\Media\Entities\File;
+use Modules\Media\Entities\Gallery;
+use Modules\Media\Helpers\FileHelper;
+use Modules\Media\Entities\MediaFiles;
 use Modules\Media\Events\FileWasLinked;
+use Modules\Media\Repositories\FolderRepository;
+use Modules\Media\Services\FileService;
+use Yajra\DataTables\Facades\DataTables;
 use Modules\Media\Events\FileWasUnlinked;
 use Modules\Media\Events\FileWasUploaded;
-use Modules\Media\Helpers\FileHelper;
-use Modules\Media\Http\Requests\UploadDropzoneMediaRequest;
-use Modules\Media\Http\Requests\UploadMediaRequest;
-use Modules\Media\Image\Imagy;
 use Modules\Media\Repositories\FileRepository;
-use Modules\Media\Services\FileService;
 use Modules\Media\Transformers\MediaTransformer;
-use Yajra\DataTables\Facades\DataTables;
+use Modules\Media\Repositories\GalleryRepository;
+use Modules\Media\Http\Requests\UploadMediaRequest;
+use Modules\Media\Repositories\GalleryMediaFilesRepository;
+use Modules\Media\Http\Requests\UploadDropzoneMediaRequest;
+use Modules\Media\Http\Requests\OrderFileIntoGalleryRequest;
+use Modules\Media\Http\Requests\UploadDropzoneGalleryFileRequest;
 
 class MediaController extends Controller
 {
@@ -36,11 +43,44 @@ class MediaController extends Controller
      */
     private $imagy;
 
-    public function __construct(FileService $fileService, FileRepository $file, Imagy $imagy)
-    {
+    /**
+     * @var GalleryRepository
+     */
+    private $galleryRepository;
+
+    /**
+     * @var GalleryMediaFilesRepository
+     */
+    private $galleryMediaFilesRepository;
+
+    /**
+     * @var FolderRepository
+     */
+    private $folderRepository;
+
+    /**
+     * MediaController constructor.
+     * @param FileService $fileService
+     * @param FileRepository $file
+     * @param Imagy $imagy
+     * @param GalleryRepository $galleryRepository
+     * @param GalleryMediaFilesRepository $galleryMediaFilesRepository
+     * @param FolderRepository $folderRepository
+     */
+    public function __construct(
+        FileService $fileService,
+        FileRepository $file,
+        Imagy $imagy,
+        GalleryRepository $galleryRepository,
+        GalleryMediaFilesRepository $galleryMediaFilesRepository,
+        FolderRepository $folderRepository
+    ) {
         $this->fileService = $fileService;
         $this->file = $file;
         $this->imagy = $imagy;
+        $this->galleryRepository = $galleryRepository;
+        $this->galleryMediaFilesRepository = $galleryMediaFilesRepository;
+        $this->folderRepository = $folderRepository;
     }
 
     public function all()
@@ -131,15 +171,10 @@ class MediaController extends Controller
 
     public function update(File $file, Request $request)
     {
-
         $data = $request->except(['filename', 'path', 'extension', 'size', 'id', 'thumbnails','published_at']);
-
-        //dd($request->all());
-        
         $requestData = $request->all();
         $published_at = $requestData['published_at'];
         $data['published_at'] = $published_at;
-
         $this->file->update($file, $data);
 
         return response()->json([
@@ -236,6 +271,13 @@ class MediaController extends Controller
 
     public function destroy(File $file)
     {
+        if( $file->galleries->count() !==0 ) {
+            return response()->json([
+                'error' => true,
+                'message' => trans('media::messages.file is attach to gallery')
+            ], 422);
+        }
+
         $this->imagy->deleteAllFor($file);
         $this->file->destroy($file);
 
@@ -258,5 +300,67 @@ class MediaController extends Controller
         }
 
         return $file->path->getRelativeUrl();
+    }
+
+    /**
+     * Method to upload file and attach to gallery
+     *
+     * @param UploadDropzoneGalleryFileRequest $request
+     * @return JsonResponse
+     */
+    public function storeGalleryFileDropzone(
+        UploadDropzoneGalleryFileRequest $request
+    ) : JsonResponse {
+        $gallery = $this->galleryRepository->find($request->galleryId);
+        $savedFile = $this->fileService->storeGalleryFile($request->file('file'), $gallery);
+        /** @var Gallery $gallery */
+        if (is_string($savedFile)) {
+            return response()->json([
+                'error' => $savedFile,
+            ], 409);
+        }
+        event(new FileWasUploaded($savedFile));
+        $mediaFiles = $this->galleryMediaFilesRepository->getLastItemInOrderFilesList($request->galleryId);
+        $order = 1;
+        if( $mediaFiles != null) {
+            $order = (int)$mediaFiles->order + 1;
+        }
+        $this->galleryRepository->assignImagesToGallery($gallery, $savedFile, $order);
+
+        return response()->json($savedFile->toArray());
+    }
+
+    /**
+     * @param OrderFileIntoGalleryRequest $request
+     * @return JsonResponse
+     */
+    public function updateOrderFileIntoGallery(OrderFileIntoGalleryRequest $request): JsonResponse
+    {
+        /** @var MediaFiles $mediaFile */
+        $mediaFile = $this->galleryMediaFilesRepository->getItemByFileIdAndGalleryId(
+            $request->fileId,
+            $request->galleryId
+        );
+
+        $currentOrder = $mediaFile->order;
+        if( $currentOrder > $request->fileOrder ) {
+            $this->galleryMediaFilesRepository->increaseFileOrderNumber(
+                $request->fileOrder,
+                $currentOrder-1,
+                $request->galleryId
+            );
+        } elseif ($currentOrder < $request->fileOrder) {
+            $this->galleryMediaFilesRepository->reduceFileOrderNumber(
+                $currentOrder+1,
+                $request->fileOrder,
+                $request->galleryId
+            );
+        }
+        DB::table('gallery__media_files')
+            ->where('gallery_id', $request->galleryId)
+            ->where('file_id', $request->fileId)
+            ->update(['order' => $request->fileOrder]);
+
+        return response()->json([]);
     }
 }

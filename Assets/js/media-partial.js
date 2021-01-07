@@ -118,6 +118,16 @@ $( document ).ready(function() {
 			window.open(Asgard.mediaGridSelectUrl, '_blank', 'menubar=no,status=no,toolbar=no,scrollbars=yes,height=500,width=1000');
 		};
 	}
+	if (typeof window.openMediaWindowMultipleWithoutUpload === 'undefined') {
+		window.mediaZone = '';
+		window.openMediaWindowMultipleWithoutUpload = function (event, zone) {
+			window.single = false;
+			window.old = false;
+			window.mediaZone = zone;
+			window.zoneWrapper = $('#form-attach-files-to-gallery .list-attach-files');
+			window.open(Asgard.mediaGridSelectUrlWithoutUpload, '_blank', 'menubar=no,status=no,toolbar=no,scrollbars=yes,height=500,width=1000');
+		};
+	}
 	if (typeof window.includeMediaMultiple === 'undefined') {
 		window.includeMediaMultiple = function (mediaId, filePath, mediaType, mimetype) {
 			var mediaPlaceholder;
@@ -147,6 +157,32 @@ $( document ).ready(function() {
 		};
 	}
 
+	if (typeof window.includeMediaMultipleToGalleryWithSaveButton === 'undefined') {
+		window.includeMediaMultipleToGalleryWithSaveButton = function (mediaId, filePath, mediaType, mimetype) {
+			var mediaPlaceholder;
+
+			if (mediaType === 'image') {
+				mediaPlaceholder = '<img src="' + filePath + '" alt=""/>';
+			}
+			var html = '<figure data-id="' + mediaId + '">' + mediaPlaceholder +
+				'<a class="jsRemoveLink" href="#" data-id="' + mediaId + '">' +
+				'<i class="fa fa-times-circle removeIcon"></i>' +
+				'</a>' +
+				'<input type="hidden" name="medias_multi[' + window.mediaZone + '][files][]" value="' + mediaId + '">' +
+				'</figure>';
+			window.zoneWrapper.append(html).fadeIn();
+			window.zoneWrapper.trigger('sortupdate');
+			if ($fileCount.length > 0) {
+				var count = parseInt($fileCount.text());
+				$fileCount.text(count + 1);
+			}
+			if($('figure', window.zoneWrapper).length == 1) {
+				$('#btn-attach-file-to-gallery').show();
+			}
+		};
+	}
+
+
 	// This comes from new-file-link-multiple
 	sortableWrapper.on('click', '.jsRemoveLink', function (e) {
 		e.preventDefault();
@@ -159,6 +195,10 @@ $( document ).ready(function() {
 		if ($fileCount.length > 0) {
 			var count = parseInt($fileCount.text());
 			$fileCount.text(count - 1);
+		}
+
+		if($('figure', window.zoneWrapper).length == 0) {
+			$('#btn-attach-file-to-gallery').hide();
 		}
 	});
 
@@ -192,4 +232,80 @@ $( document ).ready(function() {
 		var browseButton = el.parent().find('.btn-browse');
 		browseButton.toggle();
 	}
+
+	function moveUp($item) {
+		$before = $item.prev();
+		$item.insertBefore($before);
+	}
+
+	function moveDown($item) {
+		$after = $item.next();
+		$item.insertAfter($after);
+	}
+
+	function updateFilesOrder() {
+		$('.jsGalleryFileList tbody tr').each(function( index ) {
+			$('.order-column' ,this ).text(index+1);
+		});
+	}
+
+	$('.move-up').click(function (){
+		moveUp($(this).parents('tr'));
+		updateFilesOrder();
+		var order = parseInt($('.order-column',$(this).parents('tr')).text());
+		var formData = new FormData();
+		formData.append('galleryId',$('.jsGalleryFileList').data('galleryId'));
+		formData.append('fileId',$(this).parents('tr').data('fileId'));
+		formData.append('fileOrder', order);
+		var object = {};
+		formData.forEach(function (value, key) {
+			object[key] = value;
+		});
+		var request = $.ajax({
+			type: "PUT",
+			url: "/api/gallery/file/order",
+			data: object,
+			beforeSend: function (xhr) {
+				xhr.setRequestHeader ("Authorization", AuthorizationHeaderValue);
+			}
+		});
+		request.fail(function( jqXHR, textStatus, errorThrown ) {
+			console.log('error');
+		});
+	});
+
+	$('.move-down').click(function (){
+		moveDown($(this).parents('tr'));
+		updateFilesOrder();
+		var order = parseInt($('.order-column',$(this).parents('tr')).text());
+		var formData = new FormData();
+		formData.append('galleryId',$('.jsGalleryFileList').data('galleryId'));
+		formData.append('fileId',$(this).parents('tr').data('fileId'));
+		formData.append('fileOrder', order);
+		var object = {};
+		formData.forEach(function (value, key) {
+			object[key] = value;
+		});
+		var request = $.ajax({
+			type: "PUT",
+			url: "/api/gallery/file/order",
+			data: object,
+			beforeSend: function (xhr) {
+				xhr.setRequestHeader ("Authorization", AuthorizationHeaderValue);
+			}
+		});
+		request.fail(function( jqXHR, textStatus, errorThrown ) {
+			console.log('error');
+		});
+	});
+
+/*	$('#btn-attach-file-to-gallery').click(function(){
+		var object = {};
+		object["galleryId"] = $('.jsGalleryFileList').data('galleryId');
+		$('.list-attach-files figure').each(function (){
+			object["galleryId"][] = this.data("id");
+		});
+
+		console.log(object);
+	});*/
 });

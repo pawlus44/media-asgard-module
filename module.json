@@ -18,6 +18,7 @@
         "FileHelper": "Modules\\Media\\Helpers\\FileHelper",
         "MediaSingleDirective": "Modules\\Media\\Blade\\Facades\\MediaSingleDirective",
         "MediaMultipleDirective": "Modules\\Media\\Blade\\Facades\\MediaMultipleDirective",
+        "GalleryMediaMultipleDirective": "Modules\\Media\\Blade\\Facades\\GalleryMediaMultipleDirective",
         "MediaThumbnailDirective": "Modules\\Media\\Blade\\Facades\\MediaThumbnailDirective",
         "DocumentSingleDirective": "Modules\\Media\\Blade\\Facades\\DocumentSingleDirective",
         "DocumentMultipleDirective": "Modules\\Media\\Blade\\Facades\\DocumentMultipleDirective"

@@ -52,22 +52,39 @@
                 });
                 this.form.post(route('api.media.media.move'))
                     .then((response) => {
-                        this.loading = false;
-                        const type = response.errors === true ? 'warning' : 'success';
-
-                        this.$message({
-                            type,
+                      this.loading = false;
+                      if (response.status === 'something is not ok') {
+                          this.$message({
+                            type: 'warning',
                             message: response.message,
-                        });
-                        this.dialogFormVisible = false;
+                          });
+                      } else {
+                        this.$message({
+                            type: 'success',
+                            message: response.message,
+                          });
                         this.$events.emit('mediaWasMoved', response);
+                      }
+                      this.dialogFormVisible = false;
                     })
-                    .catch(() => {
-                        this.loading = false;
-                        this.$notify.error({
-                            title: 'Error',
-                            message: 'There are some errors in the form.',
+                    .catch((error) => {
+                      this.loading = false;
+                      if (error.response.data.status === 'undefined') {
+                        this.$message({
+                          type: 'error',
+                          message: error.data.message,
                         });
+                      } else if (error.response.status === 422) {
+                        this.$message({
+                          type: 'error',
+                          message: error.response.data.message,
+                        });
+                      } else {
+                        this.$message({
+                          type: 'error',
+                          message: error.data.message,
+                        });
+                      }
                     });
             },
             closeDialog() {
